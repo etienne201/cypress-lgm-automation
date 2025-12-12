@@ -1,29 +1,44 @@
 import BasePage from './base.page';
 
-/**
- * Page Object du tableau de bord.
- */
 class DashboardPage extends BasePage {
   constructor() {
     super();
+
     this.selectors = {
-      container: '[data-test-id="dashboard-container"], main',
-      userMenu: '[data-test-id="user-menu"], [data-test-id="profile-menu"]',
-      headerTitle: '[data-test-id="dashboard-title"], h1',
-      loader: '[data-test-id="loading-spinner"]'
+      // dashboardHeader: '[data-test-id="dashboard-header"], h1, .dashboard-title',
+      // userMenu: '[data-test-id="user-menu"]',
+      // logoutButton: '[data-test-id="logout-button"]',
+      // loader: '[data-testid="loader"], .loading'
     };
   }
 
+  /**
+   * Vérifie que le dashboard est chargé
+   */
   verifyDashboardLoaded() {
-    this.waitForPageLoad();
-    cy.get(this.selectors.loader).should('not.exist');
-    cy.get(this.selectors.container, { timeout: 20000 }).should('be.visible');
-    cy.url().should('include', '/dashboard');
+    cy.get(this.selectors.loader, { timeout: 20000 }).should('not.exist');
+
+    cy.get(this.selectors.dashboardHeader, { timeout: 10000 })
+      .should('be.visible');
+
+    cy.url().should('include', '/campaigns?CS=all');
     return this;
   }
 
+  /**
+   * Ouvre le menu utilisateur
+   */
   openUserMenu() {
-    cy.get(this.selectors.userMenu).click({ force: true });
+    cy.get(this.selectors.userMenu).should('be.visible').click();
+    return this;
+  }
+
+  /**
+   * Déconnexion
+   */
+  logout() {
+    this.openUserMenu();
+    cy.get(this.selectors.logoutButton).click();
     return this;
   }
 }

@@ -5,7 +5,7 @@
 
 class BasePage {
   constructor() {
-    this.pageLoadTimeout = 120000; // 2 minutes pour les connexions lentes
+    this.pageLoadTimeout = 30000;
   }
 
   /**
@@ -21,8 +21,8 @@ class BasePage {
   /**
    * Attendre le chargement complet de la page
    */
-  waitForPageLoad(timeout = this.pageLoadTimeout) {
-    cy.window({ timeout }).its('document.readyState').should('eq', 'complete');
+  waitForPageLoad() {
+    cy.window().its('document.readyState').should('eq', 'complete');
     return this;
   }
 

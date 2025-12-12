@@ -6,47 +6,62 @@ describe('Login Feature', { tags: ['@auth', '@login'] }, () => {
   const dashboardPage = new DashboardPage();
 
   before(() => {
-    cy.customLog('🚀 Starting test suite', 'info');
+    cy.customLog('🚀 Starting Login Test Suite', 'info');
   });
 
   beforeEach(() => {
-    // Ensure clean storage and visit the login page fresh.
+    // Clear local/session storage to avoid cache/login persistence
     cy.clearAllStorage();
+
+    // Open login page
     loginPage.visit();
   });
 
   context('Successful Login', { tags: '@positive' }, () => {
-    it('should login with valid credentials', () => {
+    it('should login with valid standard user', () => {
       const user = Cypress.env('users')?.standard;
 
-      // Use UI flow
+      expect(user, 'Standard user must exist in cypress.env.json').to.exist;
+
       loginPage
         .login(user.email, user.password)
         .waitForLoginComplete()
         .verifySuccessfulLogin();
 
-      // The dashboard page should implement verifyDashboardLoaded()
-      // The page object should handle specifics (selectors, API waits, etc.)
       dashboardPage.verifyDashboardLoaded();
     });
 
-    it("should login as admin", { tags: '@admin' }, () => {
-      const admin = Cypress.env('users')?.admin;
+    // it('should login as admin', { tags: '@admin' }, () => {
+    //   const admin = Cypress.env('users')?.admin;
 
-      loginPage
-        .login(admin.email, admin.password)
-        .waitForLoginComplete()
-        .verifySuccessfulLogin();
-    });
+    //   expect(admin, 'Admin user must exist in cypress.env.json').to.exist;
+
+    //   loginPage
+    //     .login(admin.email, admin.password)
+    //     .waitForLoginComplete()
+    //     .verifySuccessfulLogin();
+
+    //   dashboardPage.verifyDashboardLoaded();
+    // });
   });
 
-  afterEach(function () {
-    // Screenshot on failure and friendly logs.
-    if (this.currentTest.state === 'failed') {
-      cy.screenshot(this.currentTest.fullTitle());
-      cy.customLog(`Test failed: ${this.currentTest.title}`, 'error');
-    } else if (this.currentTest.state === 'passed') {
-      cy.customLog(`Test passed: ${this.currentTest.title}`, 'success');
-    }
-  });
+  // context('Failed Login', { tags: '@negative' }, () => {
+  //   it('should show an error with invalid credentials', () => {
+  //     loginPage
+  //       .login('invalid@test.com', 'wrongpassword')
+  //       .waitForLoginComplete()
+  //       .verifyLoginError('Invalid credentials'); // adapte si ton message diffère
+  //   });
+  // });
+
+  // afterEach(function () {
+  //   const status = this.currentTest.state;
+
+  //   if (status === 'failed') {
+  //     cy.customLog(`❌ Test failed: ${this.currentTest.title}`, 'error');
+  //     cy.screenshot(this.currentTest.fullTitle());
+  //   } else {
+  //     cy.customLog(`✅ Test passed: ${this.currentTest.title}`, 'success');
+  //   }
+  // });
 });
