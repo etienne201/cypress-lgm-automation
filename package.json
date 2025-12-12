@@ -1,0 +1,53 @@
+{
+  "name": "cypress-lgm-automation",
+  "version": "1.0.0",
+  "description": "Automated testing suite for La Growth Machine using Cypress with POM pattern",
+  "main": "index.js",
+  "scripts": {
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "cypress:run:chrome": "cypress run --browser chrome",
+    "cypress:run:firefox": "cypress run --browser firefox",
+    "cypress:run:edge": "cypress run --browser edge",
+    "test:api": "cypress run --spec 'cypress/e2e/api/**/*.cy.js'",
+    "test:frontend": "cypress run --spec 'cypress/e2e/frontend/**/*.cy.js'",
+    "test:smoke": "cypress run --env grepTags=@smoke",
+    "test:regression": "cypress run --env grepTags=@regression",
+    "test:headed": "cypress run --headed",
+    "test:parallel": "cypress run --record --parallel --group 'UI Tests'",
+    "allure:report": "allure generate allure-results --clean -o allure-report && allure open allure-report",
+    "allure:clear": "rm -rf allure-results allure-report",
+    "allure:generate": "allure generate allure-results --clean -o allure-report",
+    "allure:open": "allure open allure-report",
+    "test:all": "npm run allure:clear && npm run cypress:run && npm run allure:generate",
+    "lint": "eslint cypress --ext .js,.ts",
+    "format": "prettier --write 'cypress/**/*.{js,ts,json}'"
+  },
+  "keywords": [
+    "cypress",
+    "e2e",
+    "testing",
+    "automation",
+    "pom",
+    "qa"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "@cypress/grep": "^4.1.0",
+    "@faker-js/faker": "^8.4.0",
+    "@shelex/cypress-allure-plugin": "^2.40.2",
+    "@slack/webhook": "^7.0.2",
+    "@types/node": "^20.11.0",
+    "allure-commandline": "^2.25.0",
+    "cypress": "^13.6.3",
+    "dotenv": "^16.3.1",
+    "eslint": "^8.56.0",
+    "prettier": "^3.1.1",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

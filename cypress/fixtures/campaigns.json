@@ -1,0 +1,184 @@
+{
+  "sampleCampaigns": [
+    {
+      "id": "campaign-001",
+      "name": "Q4 Product Launch",
+      "description": "Email campaign for Q4 product launch",
+      "type": "email",
+      "status": "active",
+      "targetAudience": "all-customers",
+      "schedule": {
+        "startDate": "2024-10-01T09:00:00Z",
+        "endDate": "2024-12-31T23:59:59Z",
+        "frequency": "weekly"
+      },
+      "content": {
+        "template": "product-launch-template",
+        "subject": "Introducing Our Latest Innovation",
+        "previewText": "Be the first to experience our new product"
+      },
+      "metrics": {
+        "sent": 5000,
+        "delivered": 4950,
+        "opened": 2475,
+        "clicked": 742,
+        "converted": 148,
+        "openRate": 50,
+        "clickRate": 15,
+        "conversionRate": 3
+      }
+    },
+    {
+      "id": "campaign-002",
+      "name": "Holiday Sales Campaign",
+      "description": "Special holiday promotions",
+      "type": "email",
+      "status": "scheduled",
+      "targetAudience": "engaged-users",
+      "schedule": {
+        "startDate": "2024-12-15T00:00:00Z",
+        "endDate": "2024-12-26T23:59:59Z",
+        "frequency": "daily"
+      },
+      "content": {
+        "template": "holiday-template",
+        "subject": "🎄 Exclusive Holiday Deals Inside!",
+        "previewText": "Up to 50% off on selected items"
+      },
+      "metrics": {
+        "sent": 0,
+        "delivered": 0,
+        "opened": 0,
+        "clicked": 0,
+        "converted": 0,
+        "openRate": 0,
+        "clickRate": 0,
+        "conversionRate": 0
+      }
+    }
+  ],
+  "campaignTemplates": {
+    "email": {
+      "name": "Email Campaign Template",
+      "requiredFields": ["name", "subject", "targetAudience"],
+      "optionalFields": ["description", "schedule", "tags"]
+    },
+    "linkedin": {
+      "name": "LinkedIn Campaign Template",
+      "requiredFields": ["name", "message", "targetAudience"],
+      "optionalFields": ["connectionRequest", "followUpMessage"]
+    },
+    "twitter": {
+      "name": "Twitter Campaign Template",
+      "requiredFields": ["name", "tweetContent", "targetAudience"],
+      "optionalFields": ["hashtags", "mentions", "mediaUrl"]
+    }
+  },
+  "testCampaignData": {
+    "basic": {
+      "name": "Test Campaign Basic",
+      "description": "Basic test campaign",
+      "type": "email",
+      "targetAudience": "test-segment"
+    },
+    "advanced": {
+      "name": "Test Campaign Advanced",
+      "description": "Advanced test campaign with all options",
+      "type": "email",
+      "targetAudience": "premium-users",
+      "schedule": {
+        "startDate": "2024-12-10T09:00:00Z",
+        "endDate": "2024-12-20T17:00:00Z",
+        "frequency": "daily",
+        "timezone": "UTC"
+      },
+      "content": {
+        "template": "advanced-template",
+        "subject": "Advanced Test Campaign",
+        "previewText": "This is a test",
+        "personalization": {
+          "useFirstName": true,
+          "useCompany": true,
+          "dynamicContent": true
+        }
+      },
+      "tracking": {
+        "utmSource": "test-campaign",
+        "utmMedium": "email",
+        "utmCampaign": "advanced-test",
+        "customParameters": {
+          "testId": "12345",
+          "variant": "A"
+        }
+      },
+      "abTest": {
+        "enabled": true,
+        "variants": [
+          {
+            "name": "Variant A",
+            "percentage": 50,
+            "subject": "Subject A"
+          },
+          {
+            "name": "Variant B",
+            "percentage": 50,
+            "subject": "Subject B"
+          }
+        ]
+      }
+    },
+    "minimal": {
+      "name": "Test Campaign Minimal",
+      "type": "email"
+    }
+  },
+  "invalidCampaignData": [
+    {
+      "description": "Missing name",
+      "data": {
+        "type": "email",
+        "targetAudience": "all"
+      },
+      "expectedError": "Campaign name is required"
+    },
+    {
+      "description": "Invalid email format",
+      "data": {
+        "name": "Invalid Campaign",
+        "type": "invalid-type"
+      },
+      "expectedError": "Invalid campaign type"
+    },
+    {
+      "description": "Empty target audience",
+      "data": {
+        "name": "No Audience Campaign",
+        "type": "email",
+        "targetAudience": ""
+      },
+      "expectedError": "Target audience is required"
+    }
+  ],
+  "campaignStates": {
+    "draft": {
+      "status": "draft",
+      "allowedActions": ["edit", "delete", "launch"]
+    },
+    "scheduled": {
+      "status": "scheduled",
+      "allowedActions": ["edit", "cancel", "reschedule"]
+    },
+    "active": {
+      "status": "active",
+      "allowedActions": ["pause", "view-analytics"]
+    },
+    "paused": {
+      "status": "paused",
+      "allowedActions": ["resume", "edit", "stop"]
+    },
+    "completed": {
+      "status": "completed",
+      "allowedActions": ["view-analytics", "duplicate", "archive"]
+    }
+  }
+}

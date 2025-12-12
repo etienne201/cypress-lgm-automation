@@ -1,0 +1,97 @@
+{
+  "validUsers": [
+    {
+      "id": "user-001",
+      "email": "john.doe@example.com",
+      "password": "SecurePass123!",
+      "firstName": "John",
+      "lastName": "Doe",
+      "role": "admin",
+      "company": "ACME Corp",
+      "status": "active"
+    },
+    {
+      "id": "user-002",
+      "email": "jane.smith@example.com",
+      "password": "SecurePass123!",
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "role": "user",
+      "company": "Tech Solutions",
+      "status": "active"
+    },
+    {
+      "id": "user-003",
+      "email": "bob.tester@example.com",
+      "password": "TestPass123!",
+      "firstName": "Bob",
+      "lastName": "Tester",
+      "role": "tester",
+      "company": "QA Labs",
+      "status": "active"
+    }
+  ],
+  "invalidUsers": [
+    {
+      "email": "invalid@example.com",
+      "password": "WrongPassword123!",
+      "expectedError": "Invalid credentials"
+    },
+    {
+      "email": "locked@example.com",
+      "password": "LockedAccount123!",
+      "expectedError": "Account is locked"
+    },
+    {
+      "email": "inactive@example.com",
+      "password": "InactiveUser123!",
+      "expectedError": "Account is inactive"
+    }
+  ],
+  "validationTestCases": [
+    {
+      "email": "",
+      "password": "password123",
+      "expectedError": "Email is required"
+    },
+    {
+      "email": "test@example.com",
+      "password": "",
+      "expectedError": "Password is required"
+    },
+    {
+      "email": "notanemail",
+      "password": "password123",
+      "expectedError": "Please enter a valid email"
+    },
+    {
+      "email": "test@example.com",
+      "password": "short",
+      "expectedError": "Password must be at least 8 characters"
+    }
+  ],
+  "registrationData": {
+    "valid": {
+      "email": "newuser@example.com",
+      "password": "NewUserPass123!",
+      "firstName": "New",
+      "lastName": "User",
+      "company": "Startup Inc",
+      "phone": "+1234567890",
+      "country": "United States",
+      "agreeToTerms": true
+    },
+    "invalid": [
+      {
+        "email": "existing@example.com",
+        "password": "password123",
+        "expectedError": "Email already exists"
+      },
+      {
+        "email": "test@example.com",
+        "password": "weak",
+        "expectedError": "Password is too weak"
+      }
+    ]
+  }
+}
