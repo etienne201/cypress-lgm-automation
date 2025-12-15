@@ -1,0 +1,67 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - import/**
+  pull_request:
+    branches:
+      - main
+      - develop
+  schedule:
+    - cron: '0 6 * * *' # 7:00 AM CAT (Central African Time)
+    - cron: '0 12 * * *' # 1:00 PM CAT
+    - cron: '0 17 * * *' # 6:00 PM CAT
+
+jobs:
+  cypressTestE2E:
+    runs-on: ubuntu-latest
+
+    env:
+      BASE_URL: https://test.lagrowthmachine.xyz
+      BASE_URL_API: https://apiv2-test.lagrowthmachine.xyz
+      CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }} # Ensure CYPRESS_RECORD_KEY is stored in GitHub Secrets
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: yarn install
+
+      # Step 4: Install Docker Compose
+      - name: Install Docker Compose
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y docker-compose
+
+      # Step 5: Build and run Cypress Docker container
+      - name: Build and run Cypress Docker container
+        run: |
+          docker-compose up --build --abort-on-container-exit
+        env:
+          BASE_URL: ${{ env.BASE_URL }}
+          BASE_URL_API: ${{ env.BASE_URL_API }}
+
+      # Step 6: Run Cypress tests with recording enabled
+      - name: Run Cypress tests with record
+        run: yarn run cy:run:record
+        env:
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+
+      # Step 7: Upload Cypress test reports
+      - name: Upload Cypress test reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: cypress-reports
+          path: ./cypress/reports
