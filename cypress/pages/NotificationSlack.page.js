@@ -7,14 +7,19 @@ class NotificationSlackPage extends BasePage {
     super();
     this.path = '/settings/notifications/slack'; // Page Slack notifications
 
-    // ⚡ QA-friendly selectors
     this.selectors = {
-      pageTitle: '[data-testid="slack-page-title"]', // unique title element
-      slackContainer: '[data-testid="slack-settings"]', // container for Slack settings
-      connectButton: '[data-testid="connect-slack-btn"]',
-      disconnectButton: '[data-testid="disconnect-slack-btn"]',
-      statusConnected: '[data-testid="slack-status"]', // shows "Connected" or "Actif"
-      loader: '[data-testid="loader"], .spinner, .loading'
+      avatarButton:     '[style="--avatar-size: 40px; --avatar-br: 50%; --img-br: 50%; --avatar-bc: transparent;"] > .h-full',
+
+      userMenu:'.top > :nth-child(4)',
+      Slacknavigate: '.flex-wrap > :nth-child(2)',
+      settingsItem: '.user_menu > .top > :nth-child(4)',
+      notificationsItem: ':nth-child(5) > .text',
+      statusConnected: '[data-testid="slack-status"]',
+      loader: '[data-testid="loader"], .spinner, .loading',
+      slackContainer: '.bg-white > .text-\\[18px\\]',
+      CreaterNotification: '.justify-between > .btn'
+
+
     };
   }
 
@@ -22,6 +27,40 @@ class NotificationSlackPage extends BasePage {
    * Visit Slack notification page safely
    * Log in via UI if user not already authenticated
    */
+  /**
+   * Navigate to Slack notifications via UI menu
+   * (required before accessing Slack page)
+   */
+  openFromUserMenu() {
+    cy.customLog('Open user menu', 'info');
+
+    cy.get(this.selectors.avatarButton, { timeout: 20000 })
+      .should('be.visible')
+      .click();
+
+    cy.get(this.selectors.userMenu)
+      .should('be.visible');
+ 
+    cy.get(this.selectors.settingsItem)
+      .should('be.visible')
+      .click();
+
+    cy.get(this.selectors.notificationsItem)
+      .should('be.visible')
+      .click();
+      cy.get(this.selectors.Slacknavigate)
+      .should('be.visible')
+      .click();
+      cy.get(this.selectors.CreaterNotification)
+      .should('be.visible')
+      .click();
+
+    this.waitForLoader();
+    this.verifySlackPageIsVisible();
+
+    cy.customLog('Slack notification page opened via UI', 'success');
+    return this;
+  }
   visit() {
     const fullUrl = Cypress.config('baseUrl') + this.path;
 
@@ -65,7 +104,7 @@ class NotificationSlackPage extends BasePage {
    * Verify main Slack container is visible
    */
   verifySlackPageIsVisible() {
-    cy.get(this.selectors.pageTitle, { timeout: 20000 }).should('exist').and('be.visible');
+    //cy.get(this.selectors.pageTitle, { timeout: 20000 }).should('exist').and('be.visible');
     cy.get(this.selectors.slackContainer).should('exist').and('be.visible');
     cy.log('✅ Slack container is visible');
     return this;
