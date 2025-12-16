@@ -17,8 +17,10 @@ class NotificationSlackPage extends BasePage {
       statusConnected: '[data-testid="slack-status"]',
       loader: '[data-testid="loader"], .spinner, .loading',
       slackContainer: '.bg-white > .text-\\[18px\\]',
-      CreaterNotification: '.justify-between > .btn'
-
+      CreaterNotification: '.justify-between > .btn',
+      triggerPlaceholder: 'Select trigger',
+      channelPlaceholder: 'Select channels',
+      identityPlaceholder: 'Select identity',
 
     };
   }
@@ -31,6 +33,58 @@ class NotificationSlackPage extends BasePage {
    * Navigate to Slack notifications via UI menu
    * (required before accessing Slack page)
    */
+  selectFromReactSelect({ placeholderText, optionLabel }) {
+    // 1️⃣ Ouvrir le dropdown via le placeholder
+    cy.contains('[id$="-placeholder"]', placeholderText, { timeout: 20000 })
+      .closest('div.css-1huvecd')
+      .should('exist')
+      .click({ force: true });
+
+    // 2️⃣ Attendre que l'option cible existe
+    cy.get('body', { timeout: 20000 })
+      .contains('[role="option"]', optionLabel)
+      .should('exist')
+      .click({ force: true });
+  }
+
+  s /**
+  * =========================
+  * CAS SPÉCIFIQUE : TRIGGER
+  * =========================
+  * (lazy-loaded → options métier peuvent arriver après ouverture)
+  */
+ selectTrigger(optionLabel) {
+   this.selectFromReactSelect({
+     placeholderText: this.selectors.triggerPlaceholder,
+     optionLabel,
+   });
+ }
+
+ /**
+  * =========================
+  * CAS SPÉCIFIQUE : CHANNEL
+  * =========================
+  */
+ selectChannel(channelName) {
+   this.selectFromReactSelect({
+     placeholderText: this.selectors.channelPlaceholder,
+     optionLabel: channelName,
+   });
+ }
+
+ /**
+  * =========================
+  * CAS SPÉCIFIQUE : IDENTITY
+  * =========================
+  */
+ selectIdentity(identityName) {
+   this.selectFromReactSelect({
+     placeholderText: this.selectors.identityPlaceholder,
+     optionLabel: identityName,
+   });
+ }
+
+  
   openFromUserMenu() {
     cy.customLog('Open user menu', 'info');
 
@@ -51,10 +105,22 @@ class NotificationSlackPage extends BasePage {
       cy.get(this.selectors.Slacknavigate)
       .should('be.visible')
       .click();
-      cy.get(this.selectors.CreaterNotification)
-      .should('be.visible')
-      .click();
+    // Open "Create notification"
+    cy.get(this.selectors.CreaterNotification, { timeout: 20000 })
+    .should('be.visible')
+    .click();
+    this.wait(12000);
 
+    // Trigger (lazy)
+    this.selectTrigger('New lead reply');
+
+    // Channel
+    this.selectChannel('#all-qaautomation-test');
+
+    // Identity
+    this.selectIdentity('Robot Auto Testing');
+
+    
     this.waitForLoader();
     this.verifySlackPageIsVisible();
 

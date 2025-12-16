@@ -1,4 +1,3 @@
-// cypress/pages/login.page.js
 import BasePage from './base.page';
 
 class LoginPage extends BasePage {

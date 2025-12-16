@@ -1,5 +1,7 @@
 // cypress/support/commands.ts
 import LoginPage from '../pages/login.page';
+import "cypress-real-events/support";
+
 
 /**
  * Custom logging with emoji and timestamp
