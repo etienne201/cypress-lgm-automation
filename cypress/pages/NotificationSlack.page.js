@@ -1,16 +1,22 @@
-// cypress/pages/NotificationSlack.page.js
 import BasePage from './base.page';
 import LoginPage from './login.page';
 
 class NotificationSlackPage extends BasePage {
   constructor() {
     super();
-    this.path = '/settings/notifications/slack'; // Page Slack notifications
+    this.path = '/settings/notifications/slack';
+
+    this.placeholders = {
+      trigger: 'Select trigger',
+      channel: 'Select channels',
+      identity: 'Select identity',
+    };
 
     this.selectors = {
-      avatarButton:     '[style="--avatar-size: 40px; --avatar-br: 50%; --img-br: 50%; --avatar-bc: transparent;"] > .h-full',
-
-      userMenu:'.top > :nth-child(4)',
+      avatarButton:
+        '[style="--avatar-size: 40px; --avatar-br: 50%; --img-br: 50%; --avatar-bc: transparent;"] > .h-full',
+      userMenu: '.top > :nth-child(4)',
+      intergretAPi: ':nth-child(6) > .text',
       Slacknavigate: '.flex-wrap > :nth-child(2)',
       settingsItem: '.user_menu > .top > :nth-child(4)',
       notificationsItem: ':nth-child(5) > .text',
@@ -18,73 +24,135 @@ class NotificationSlackPage extends BasePage {
       loader: '[data-testid="loader"], .spinner, .loading',
       slackContainer: '.bg-white > .text-\\[18px\\]',
       CreaterNotification: '.justify-between > .btn',
-      triggerPlaceholder: 'Select trigger',
-      channelPlaceholder: 'Select channels',
-      identityPlaceholder: 'Select identity',
-
+      close: '.top-\\[32px\\] > .btn',
+      bouton: '.gap-\\[12px\\] > .flex > .primary > span'
     };
   }
 
-  /**
-   * Visit Slack notification page safely
-   * Log in via UI if user not already authenticated
-   */
-  /**
-   * Navigate to Slack notifications via UI menu
-   * (required before accessing Slack page)
-   */
+  // =========================
+  // GENERIC REACT-SELECT
+  // =========================
   selectFromReactSelect({ placeholderText, optionLabel }) {
-    // 1️⃣ Ouvrir le dropdown via le placeholder
-    cy.contains('[id$="-placeholder"]', placeholderText, { timeout: 20000 })
-      .closest('div.css-1huvecd')
-      .should('exist')
+    cy.log(`Searching for Select: ${placeholderText}`);
+
+    // Locate the container matching the placeholder text
+    cy.contains(
+      '.react-select__control, .css-17gvuhw-container',
+      placeholderText
+    ).as('currentContainer');
+
+    // Open the select input
+    cy.get('@currentContainer').within(() => {
+      cy.get('input[role="combobox"]').click({ force: true });
+    });
+
+    // Wait for the listbox to appear and not show Loading
+    cy.get('[role="listbox"]', { timeout: 15000 })
+      .should('be.visible')
+      .should('not.contain', 'Loading');
+
+    // Select the desired option
+    cy.get('[role="listbox"]')
+      .contains('[role="option"]', optionLabel)
+      .scrollIntoView()
       .click({ force: true });
 
-    // 2️⃣ Attendre que l'option cible existe
-    cy.get('body', { timeout: 20000 })
-      .contains('[role="option"]', optionLabel)
-      .should('exist')
-      .click({ force: true });
+    // ⚠️ IMPORTANT
+    // ❌ Do not use should('not.exist') here (React-Select safe)
   }
 
-  s /**
-  * =========================
-  * CAS SPÉCIFIQUE : TRIGGER
-  * =========================
-  * (lazy-loaded → options métier peuvent arriver après ouverture)
-  */
- selectTrigger(optionLabel) {
-   this.selectFromReactSelect({
-     placeholderText: this.selectors.triggerPlaceholder,
-     optionLabel,
-   });
- }
-
- /**
-  * =========================
-  * CAS SPÉCIFIQUE : CHANNEL
-  * =========================
-  */
- selectChannel(channelName) {
-   this.selectFromReactSelect({
-     placeholderText: this.selectors.channelPlaceholder,
-     optionLabel: channelName,
-   });
- }
-
- /**
-  * =========================
-  * CAS SPÉCIFIQUE : IDENTITY
-  * =========================
-  */
- selectIdentity(identityName) {
-   this.selectFromReactSelect({
-     placeholderText: this.selectors.identityPlaceholder,
-     optionLabel: identityName,
-   });
- }
-
+  // =========================
+  // CHANNEL (FINAL SOLUTION)
+  // =========================
+  closeChannelSelectSafely(channelValue = '#all-qaautomation-test') {
+    cy.log(`🔒 Clean exit from Channel: ${channelValue}`);
   
+    const CHANNEL_SELECT = ':nth-child(2) > .css-17gvuhw-container';
+  
+    // ✅ Do not click the option again (already selected)
+    // 👉 Only release the focus
+    cy.get(CHANNEL_SELECT)
+      .find('input[role="combobox"]')
+      .blur({ force: true });
+  
+    // Non-blocking assertion (React-Select safe)
+    cy.get('body').then(($body) => {
+      const listbox = $body.find('[role="listbox"]');
+      if (listbox.length) {
+        cy.wrap(listbox).should('not.be.visible');
+      }
+    });
+  
+    cy.log('✅ Channel validated, focus released → Identity');
+  }
+
+  closeidentifySelectSafely(identityValue = 'Robot Auto Testing') {
+    cy.log(`🔒 Clean exit from Identity field: ${identityValue}`);
+    const IDENTITY_SELECT = ':nth-child(3) > .css-17gvuhw-container';
+
+    // Release focus
+    cy.get(IDENTITY_SELECT)
+      .find('input[role="combobox"]')
+      .blur({ force: true });
+
+    // Non-blocking assertion for listbox visibility
+    cy.get('body').then(($body) => {
+      const listbox = $body.find('[role="listbox"]');
+      if (listbox.length) {
+        cy.wrap(listbox).should('not.be.visible');
+      }
+    });
+
+    cy.log('✅ Identity validated, focus released');
+  }
+
+  // =========================
+  // BUSINESS METHODS
+  // =========================
+  selectTrigger(label) {
+    this.selectFromReactSelect({
+      placeholderText: this.placeholders.trigger,
+      optionLabel: label,
+    });
+  }
+
+  selectChannel(channel) {
+    this.selectFromReactSelect({
+      placeholderText: this.placeholders.channel,
+      optionLabel: channel,
+    });
+
+    // ✅ Applied solution ONLY here
+    this.closeChannelSelectSafely(channel);
+  }
+
+  selectIdentity(identity) {
+    cy.log(`🎯 Selecting identity: ${identity}`);
+    const IDENTITY_SELECT = ':nth-child(3) > .css-17gvuhw-container';
+
+    // Open the select input
+    cy.get(IDENTITY_SELECT)
+      .find('input[role="combobox"]')
+      .click({ force: true });
+
+    // Wait for the listbox
+    cy.get('[role="listbox"]', { timeout: 15000 })
+      .should('be.visible')
+      .should('not.contain', 'Loading');
+
+    // Select the option
+    cy.get('[role="listbox"]')
+      .contains('[role="option"]', identity)
+      .scrollIntoView()
+      .click({ force: true });
+
+    // Clean exit
+    this.closeidentifySelectSafely(identity);
+  }
+
+  // =========================
+  // NAVIGATION & FLOW
+  // =========================
   openFromUserMenu() {
     cy.customLog('Open user menu', 'info');
 
@@ -92,48 +160,48 @@ class NotificationSlackPage extends BasePage {
       .should('be.visible')
       .click();
 
-    cy.get(this.selectors.userMenu)
-      .should('be.visible');
- 
-    cy.get(this.selectors.settingsItem)
-      .should('be.visible')
-      .click();
+    cy.get(this.selectors.userMenu).should('be.visible');
 
-    cy.get(this.selectors.notificationsItem)
-      .should('be.visible')
-      .click();
-      cy.get(this.selectors.Slacknavigate)
-      .should('be.visible')
-      .click();
-    // Open "Create notification"
+    cy.get(this.selectors.settingsItem).should('be.visible').click();
+    cy.get(this.selectors.notificationsItem).should('be.visible').click();
+    cy.get(this.selectors.intergretAPi).should('be.visible').click();
+    cy.get(this.selectors.Slacknavigate).should('be.visible').click();
+
     cy.get(this.selectors.CreaterNotification, { timeout: 20000 })
-    .should('be.visible')
-    .click();
-    this.wait(12000);
+      .should('be.visible')
+      .click();
 
-    // Trigger (lazy)
+    cy.get(this.selectors.close).should('be.visible').click();
+
+    cy.wait(12000);
+
+    cy.get(this.selectors.CreaterNotification, { timeout: 20000 })
+      .should('be.visible')
+      .click();
+
+    cy.wait(12000);
+
+    // =========================
+    // FORM FILL (STABLE)
+    // =========================
     this.selectTrigger('New lead reply');
-
-    // Channel
     this.selectChannel('#all-qaautomation-test');
-
-    // Identity
     this.selectIdentity('Robot Auto Testing');
+    cy.wait(10000)
+    cy.get(this.selectors.bouton).click();
 
-    
     this.waitForLoader();
     this.verifySlackPageIsVisible();
 
     cy.customLog('Slack notification page opened via UI', 'success');
     return this;
   }
+
   visit() {
     const fullUrl = Cypress.config('baseUrl') + this.path;
 
-    // Check if user is logged in (example: cookie check)
     cy.getCookie('lgm-connect-sid').then((cookie) => {
       if (!cookie) {
-        // Perform UI login
         const users = Cypress.env('users') || {};
         const standardUser = users.standard || {};
         if (!standardUser.email || !standardUser.password) {
@@ -141,7 +209,10 @@ class NotificationSlackPage extends BasePage {
         }
 
         const loginPage = new LoginPage();
-        loginPage.visit().login(standardUser.email, standardUser.password).waitForLoginComplete();
+        loginPage
+          .visit()
+          .login(standardUser.email, standardUser.password)
+          .waitForLoginComplete();
       }
     });
 
@@ -153,70 +224,17 @@ class NotificationSlackPage extends BasePage {
     return this;
   }
 
-  /**
-   * Wait until loader disappears
-   */
   waitForLoader(timeout = 20000) {
     cy.get('body').then(($body) => {
       if ($body.find(this.selectors.loader).length > 0) {
         cy.get(this.selectors.loader, { timeout }).should('not.exist');
-        cy.log('✅ Loader disappeared');
       }
     });
     return this;
   }
 
-  /**
-   * Verify main Slack container is visible
-   */
   verifySlackPageIsVisible() {
-    //cy.get(this.selectors.pageTitle, { timeout: 20000 }).should('exist').and('be.visible');
     cy.get(this.selectors.slackContainer).should('exist').and('be.visible');
-    cy.log('✅ Slack container is visible');
-    return this;
-  }
-
-  /**
-   * Verify Slack is connected
-   */
-  verifySlackIsConnected() {
-    this.verifySlackPageIsVisible();
-    cy.get(this.selectors.statusConnected, { timeout: 20000 })
-      .should('exist')
-      .and('contain.text', 'Connected');
-    cy.log('✅ Slack is connected');
-    return this;
-  }
-
-  /**
-   * Connect Slack
-   */
-  connectSlack() {
-    cy.get(this.selectors.connectButton, { timeout: 20000 })
-      .should('exist')
-      .and('be.visible')
-      .click();
-
-    this.waitForLoader();
-    this.verifySlackIsConnected();
-    cy.log('✅ Slack connected via button');
-    return this;
-  }
-
-  /**
-   * Disconnect Slack
-   */
-  disconnectSlack() {
-    cy.get(this.selectors.disconnectButton, { timeout: 20000 })
-      .should('exist')
-      .and('be.visible')
-      .click();
-
-    this.waitForLoader();
-
-    // Verify disconnected state (no "Connected" text)
-    cy.get(this.selectors.statusConnected).should('not.exist');
-    cy.log('✅ Slack disconnected via button');
     return this;
   }
 }

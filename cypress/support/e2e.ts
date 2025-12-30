@@ -1,10 +1,7 @@
-// ----------------------------------------------
-// Global Support File (E2E)
-// Clean, consolidated, no duplicates
-// ----------------------------------------------
 
 import './commands';
 import './api-commands';
+
 import '@shelex/cypress-allure-plugin';
 import '@cypress/grep';
 import 'cypress-real-events/support';
@@ -15,6 +12,7 @@ import 'cypress-real-events/support';
 
 before(() => {
   cy.log('🚀 Démarrage de la suite de tests');
+
   cy.clearAllLocalStorage();
   cy.clearAllSessionStorage();
   cy.clearAllCookies();
@@ -23,11 +21,52 @@ before(() => {
 beforeEach(() => {
   cy.viewport(1920, 1080);
 
-  // Log API errors globally
-  cy.intercept('**/*', (req) => {
+  // ------------------------------------------------
+  // 🧠 MOCK STRIPE (DO NOT BLOCK IT)
+  // ------------------------------------------------
+  cy.on('window:before:load', (win) => {
+    // Fake Stripe object to prevent crashes
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (win as any).Stripe = () => ({
+      elements: () => ({
+        create: () => ({
+          mount: () => {},
+          destroy: () => {},
+        }),
+      }),
+      redirectToCheckout: () => Promise.resolve({}),
+      confirmCardPayment: () => Promise.resolve({}),
+    });
+  });
+
+  // ------------------------------------------------
+  // 🔇 BLOCK NON-CRITICAL THIRD PARTIES
+  // ------------------------------------------------
+  cy.intercept('https://api.segment.io/**', { statusCode: 200, body: {} });
+  cy.intercept('https://analytics.lagrowthmachine.com/**', {
+    statusCode: 200,
+    body: {},
+  });
+
+  cy.intercept('https://dev.visualwebsiteoptimizer.com/**', {
+    statusCode: 200,
+    body: '',
+  });
+
+  cy.intercept('https://api-iam.intercom.io/**', {
+    statusCode: 200,
+    body: {},
+  });
+
+  // ------------------------------------------------
+  // 📡 LOG REAL API ERRORS ONLY
+  // ------------------------------------------------
+  cy.intercept('**/api/**', (req) => {
     req.on('response', (res) => {
       if (res.statusCode >= 400) {
-        console.log(`❌ API Error: ${req.method} ${req.url} - Status: ${res.statusCode}`);
+        console.error(
+          `❌ API Error → ${req.method} ${req.url} | ${res.statusCode}`
+        );
       }
     });
   });
@@ -38,73 +77,85 @@ afterEach(function () {
     const testName = this.currentTest.title;
     const suiteName = this.currentTest.parent?.title || 'Unknown Suite';
 
-    cy.screenshot(`${suiteName} - ${testName}`, { capture: 'fullPage', overwrite: true });
+    cy.screenshot(`${suiteName} - ${testName}`, {
+      capture: 'fullPage',
+      overwrite: true,
+    });
+
     cy.log(`❌ Test échoué: ${testName}`);
 
-    // Slack notification
-    if (Cypress.env('ENABLE_SLACK_NOTIFICATIONS') && Cypress.env('SLACK_WEBHOOK_URL')) {
+    if (
+      Cypress.env('ENABLE_SLACK_NOTIFICATIONS') &&
+      Cypress.env('SLACK_WEBHOOK_URL')
+    ) {
       const message = `
-❌ Test Failed in ${Cypress.env('environment')}
+❌ Test Failed
+Env: ${Cypress.env('environment')}
 Suite: ${suiteName}
 Test: ${testName}
 Browser: ${Cypress.browser.name}
 URL: ${Cypress.config('baseUrl')}
       `;
-      cy.task('sendSlackNotification', { text: message, webhook: Cypress.env('SLACK_WEBHOOK_URL') });
+
+      cy.task('sendSlackNotification', {
+        text: message,
+        webhook: Cypress.env('SLACK_WEBHOOK_URL'),
+      });
     }
   }
 });
 
 after(() => {
   cy.log('✅ Suite de tests terminée');
+
   cy.clearAllLocalStorage();
   cy.clearAllSessionStorage();
   cy.clearAllCookies();
 });
 
 // ----------------------------------------------
-// Exception Handling - Third Party Scripts
+// 🧯 GLOBAL ERROR SHIELD (CRITICAL PART)
 // ----------------------------------------------
 
-Cypress.on('uncaught:exception', (err: Error) => {
-  const msg = err.message.toLowerCase();
+Cypress.on('uncaught:exception', (err) => {
+  const msg = err.message?.toLowerCase() || '';
 
-  const externalErrors = [
-    'recaptcha',
-    'stripe',
-    'intercom',
-    'webflow',
-    'analytics',
-    'segment',
-    'resizeobserver',
-    'undefined'
-  ];
-
-  if (externalErrors.some(keyword => msg.includes(keyword))) {
-    return false; // ignore
+  // Ignore known non-critical frontend crashes
+  if (
+    msg.includes('stripe') ||
+    msg.includes('analytics') ||
+    msg.includes('segment') ||
+    msg.includes('intercom') ||
+    msg.includes('vwo') ||
+    msg.includes('undefined')
+  ) {
+    return false;
   }
 
-  return undefined; // let Cypress fail normally
+  return true;
 });
 
 // ----------------------------------------------
-// Timeouts
+// ⏱ Timeouts
 // ----------------------------------------------
 
-Cypress.config('defaultCommandTimeout', Cypress.env('defaultCommandTimeout') || 10000);
-Cypress.config('requestTimeout', Cypress.env('requestTimeout') || 15000);
-Cypress.config('responseTimeout', Cypress.env('responseTimeout') || 15000);
+Cypress.config('defaultCommandTimeout', 10000);
+Cypress.config('requestTimeout', 15000);
+Cypress.config('responseTimeout', 15000);
 
 // ----------------------------------------------
-// Helpers
+// 🛠 Helpers
 // ----------------------------------------------
 
 Cypress.Commands.add('waitForPageLoad', () => {
   return cy.window().its('document.readyState').should('eq', 'complete');
 });
 
-// Add timestamp to logs
-Cypress.Commands.overwrite('log', (originalFn, message, ...args) => {
+// ----------------------------------------------
+// 📝 Log with timestamp
+// ----------------------------------------------
+
+Cypress.Commands.overwrite('log', (originalFn, message: string, ...args) => {
   const timestamp = new Date().toISOString();
   return originalFn(`[${timestamp}] ${message}`, ...args);
 });
