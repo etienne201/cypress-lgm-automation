@@ -21,13 +21,16 @@ describe('Slack Notifications Settings', () => {
     dashboardPage.verifyDashboardLoaded();
   });
 
-  it('should open Slack Notification page via UI menu', () => {
-    slackPage.openFromUserMenu();
-  });
-
-  // it('should connect Slack successfully', () => {
-  //   slackPage
-  //     .openFromUserMenu()
-  //     .connectSlack();
-  // });
+    it('should create Slack Notification', () => {
+      slackPage.CreateNotificationSlack_create();
+    });
+    it('should test Slack Notification', () => {
+      slackPage.CreateNotificationSlack_test();
+    });
+    it('should delete Slack Notification', () => {
+      slackPage.deleteNotificationSlack();
+    });
+    it('should edit Slack Notification', () => {
+      slackPage.editNotificationSlack();
+    });
 });

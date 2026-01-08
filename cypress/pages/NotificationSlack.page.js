@@ -13,8 +13,7 @@ class NotificationSlackPage extends BasePage {
     };
 
     this.selectors = {
-      avatarButton:
-        '[style="--avatar-size: 40px; --avatar-br: 50%; --img-br: 50%; --avatar-bc: transparent;"] > .h-full',
+      avatarButton:'[style="--avatar-size: 40px; --avatar-br: 50%; --img-br: 50%; --avatar-bc: transparent;"] > .h-full',
       userMenu: '.top > :nth-child(4)',
       intergretAPi: ':nth-child(6) > .text',
       Slacknavigate: '.flex-wrap > :nth-child(2)',
@@ -23,9 +22,13 @@ class NotificationSlackPage extends BasePage {
       statusConnected: '[data-testid="slack-status"]',
       loader: '[data-testid="loader"], .spinner, .loading',
       slackContainer: '.bg-white > .text-\\[18px\\]',
+      
       CreaterNotification: '.justify-between > .btn',
       close: '.top-\\[32px\\] > .btn',
-      bouton: '.gap-\\[12px\\] > .flex > .primary > span'
+      bouton: '.gap-\\[12px\\] > .flex > .primary > span',
+      testNotification: '.gap-\\[12px\\] > .flex > .ghost > span',
+      deleteNotification: ':nth-child(1) > :nth-child(4) > .flex > :nth-child(2) > .fill-\\[\\#DF3D3D\\]',
+      editNotification: ':nth-child(1) > :nth-child(4) > .flex > :nth-child(1) > .fill-\\[\\#807783\\]',
     };
   }
 
@@ -153,7 +156,7 @@ class NotificationSlackPage extends BasePage {
   // =========================
   // NAVIGATION & FLOW
   // =========================
-  openFromUserMenu() {
+  CreateNotificationSlack_create() {
     cy.customLog('Open user menu', 'info');
 
     cy.get(this.selectors.avatarButton, { timeout: 20000 })
@@ -193,7 +196,107 @@ class NotificationSlackPage extends BasePage {
     this.waitForLoader();
     this.verifySlackPageIsVisible();
 
-    cy.customLog('Slack notification page opened via UI', 'success');
+    cy.customLog('Create Slack Notification success', 'success');
+    return this;
+  }
+  CreateNotificationSlack_test() {
+    cy.customLog('Open user menu', 'info');
+
+    cy.get(this.selectors.avatarButton, { timeout: 20000 })
+      .should('be.visible')
+      .click();
+
+    cy.get(this.selectors.userMenu).should('be.visible');
+
+    cy.get(this.selectors.settingsItem).should('be.visible').click();
+    cy.get(this.selectors.notificationsItem).should('be.visible').click();
+    cy.get(this.selectors.intergretAPi).should('be.visible').click();
+    cy.get(this.selectors.Slacknavigate).should('be.visible').click();
+
+    cy.get(this.selectors.CreaterNotification, { timeout: 20000 })
+      .should('be.visible')
+      .click();
+
+    cy.get(this.selectors.close).should('be.visible').click();
+
+    cy.wait(12000);
+
+    cy.get(this.selectors.CreaterNotification, { timeout: 20000 })
+      .should('be.visible')
+      .click();
+
+    cy.wait(12000);
+
+    // =========================
+    // FORM FILL (STABLE)
+    // =========================
+    this.selectTrigger('New lead reply');
+    this.selectChannel('#all-qaautomation-test');
+    this.selectIdentity('Robot Auto Testing');
+    cy.wait(10000)
+    cy.get(this.selectors.testNotification).click();
+
+    this.waitForLoader();
+    this.verifySlackPageIsVisible();
+
+    cy.customLog('test Slack Notification success', 'success');
+    return this;
+  }
+  deleteNotificationSlack() {
+    cy.customLog('Open user menu', 'info');
+
+    cy.get(this.selectors.avatarButton, { timeout: 20000 })
+      .should('be.visible')
+      .click();
+
+    cy.get(this.selectors.userMenu).should('be.visible');
+
+    cy.get(this.selectors.settingsItem).should('be.visible').click();
+    cy.get(this.selectors.notificationsItem).should('be.visible').click();
+    cy.get(this.selectors.intergretAPi).should('be.visible').click();
+    cy.get(this.selectors.Slacknavigate).should('be.visible').click();
+    cy.get(this.selectors.CreaterNotification, { timeout: 20000 })
+    .should('be.visible').click();
+     cy.get(this.selectors.close).should('be.visible').click();
+     cy.wait(20000);
+    cy.get(this.selectors.deleteNotification, { timeout: 20000 })
+      .should('be.visible')
+      .click();
+    cy.wait(12000);
+    this.waitForLoader();
+    // this.verifySlackPageIsVisible();
+
+    cy.customLog('delete Slack Notification success', 'success');
+    return this;
+  }
+  editNotificationSlack() {
+    cy.customLog('Open user menu', 'info');
+
+    cy.get(this.selectors.avatarButton, { timeout: 20000 })
+      .should('be.visible')
+      .click();
+
+    cy.get(this.selectors.userMenu).should('be.visible');
+
+    cy.get(this.selectors.settingsItem).should('be.visible').click();
+    cy.get(this.selectors.notificationsItem).should('be.visible').click();
+    cy.get(this.selectors.intergretAPi).should('be.visible').click();
+    
+    cy.get(this.selectors.Slacknavigate).should('be.visible').click();
+    cy.wait(12000);
+    cy.get(this.selectors.CreaterNotification, { timeout: 20000 })
+    .should('be.visible')
+    .click();
+    cy.get(this.selectors.close).should('be.visible').click();
+
+    cy.get(this.selectors.editNotification, { timeout: 20000 })
+      .should('be.visible')
+      .click();
+      cy.wait(12000);
+    this.waitForLoader();
+    this.verifySlackPageIsVisible();
+
+    cy.customLog('Edit Slack Notification success', 'success');
     return this;
   }
 
