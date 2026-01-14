@@ -29,56 +29,59 @@ class NotificationSlackPage extends BasePage {
       testNotification: '.gap-\\[12px\\] > .flex > .ghost > span',
       deleteNotification: ':nth-child(1) > :nth-child(4) > .flex > :nth-child(2) > .fill-\\[\\#DF3D3D\\]',
       editNotification: ':nth-child(1) > :nth-child(4) > .flex > :nth-child(1) > .fill-\\[\\#807783\\]',
+      editChannel: 'svg.fill-current', 
+      updateChannel: '.gap-\\[12px\\] > .flex > .primary > span',
+      
     };
   }
 
   // =========================
   // GENERIC REACT-SELECT
   // =========================
-  selectFromReactSelect({ placeholderText, optionLabel }) {
+  selectFromReactSelect({ placeholderText }) {
     cy.log(`Searching for Select: ${placeholderText}`);
-
+  
     // Locate the container matching the placeholder text
     cy.contains(
       '.react-select__control, .css-17gvuhw-container',
       placeholderText
     ).as('currentContainer');
-
+  
     // Open the select input
     cy.get('@currentContainer').within(() => {
       cy.get('input[role="combobox"]').click({ force: true });
     });
-
-    // Wait for the listbox to appear and not show Loading
+  
+    // Wait for the listbox to appear and options to load
     cy.get('[role="listbox"]', { timeout: 15000 })
       .should('be.visible')
-      .should('not.contain', 'Loading');
-
-    // Select the desired option
+      .should('not.contain.text', 'Loading');
+  
+    // ✅ Select the FIRST option automatically
     cy.get('[role="listbox"]')
-      .contains('[role="option"]', optionLabel)
-      .scrollIntoView()
+      .find('[role="option"]')
+      .should('have.length.greaterThan', 0) // assert at least one option exists
+      .first()
+      .scrollIntoView() // ✅ keep scrollIntoView
       .click({ force: true });
-
-    // ⚠️ IMPORTANT
-    // ❌ Do not use should('not.exist') here (React-Select safe)
+  
+    cy.log('✅ First option selected automatically');
   }
-
+  
   // =========================
   // CHANNEL (FINAL SOLUTION)
   // =========================
-  closeChannelSelectSafely(channelValue = '#all-qaautomation-test') {
-    cy.log(`🔒 Clean exit from Channel: ${channelValue}`);
+  closeChannelSelectSafely(channelValue = '') {
+    cy.log('🔒 Clean exit from Channel selection');
   
     const CHANNEL_SELECT = ':nth-child(2) > .css-17gvuhw-container';
   
-    // ✅ Do not click the option again (already selected)
-    // 👉 Only release the focus
+    // 👉 Release focus only AFTER selection
     cy.get(CHANNEL_SELECT)
       .find('input[role="combobox"]')
       .blur({ force: true });
   
-    // Non-blocking assertion (React-Select safe)
+    // ✅ Non-blocking assertion (React-Select safe)
     cy.get('body').then(($body) => {
       const listbox = $body.find('[role="listbox"]');
       if (listbox.length) {
@@ -86,17 +89,19 @@ class NotificationSlackPage extends BasePage {
       }
     });
   
-    cy.log('✅ Channel validated, focus released → Identity');
+    cy.log('✅ First channel selected automatically, focus released');
   }
-
-  closeidentifySelectSafely(identityValue = 'Robot Auto Testing') {
+  
+  
+  closeidentifySelectSafely(identityValue = '') {
     cy.log(`🔒 Clean exit from Identity field: ${identityValue}`);
     const IDENTITY_SELECT = ':nth-child(3) > .css-17gvuhw-container';
 
     // Release focus
     cy.get(IDENTITY_SELECT)
       .find('input[role="combobox"]')
-      .blur({ force: true });
+      .blur({ force: true })
+
 
     // Non-blocking assertion for listbox visibility
     cy.get('body').then(($body) => {
@@ -129,30 +134,31 @@ class NotificationSlackPage extends BasePage {
     this.closeChannelSelectSafely(channel);
   }
 
-  selectIdentity(identity) {
+  selectIdentity(identity = '') {
     cy.log(`🎯 Selecting identity: ${identity}`);
     const IDENTITY_SELECT = ':nth-child(3) > .css-17gvuhw-container';
-
+  
     // Open the select input
     cy.get(IDENTITY_SELECT)
       .find('input[role="combobox"]')
       .click({ force: true });
-
+  
     // Wait for the listbox
     cy.get('[role="listbox"]', { timeout: 15000 })
       .should('be.visible')
       .should('not.contain', 'Loading');
-
-    // Select the option
+  
+    // select FIRST option safely
     cy.get('[role="listbox"]')
-      .contains('[role="option"]', identity)
+      .find('[role="option"]')
+      .should('have.length.greaterThan', 0)
+      .first()
       .scrollIntoView()
       .click({ force: true });
-
+  
     // Clean exit
     this.closeidentifySelectSafely(identity);
   }
-
   // =========================
   // NAVIGATION & FLOW
   // =========================
@@ -188,8 +194,8 @@ class NotificationSlackPage extends BasePage {
     // FORM FILL (STABLE)
     // =========================
     this.selectTrigger('New lead reply');
-    this.selectChannel('#all-qaautomation-test');
-    this.selectIdentity('Robot Auto Testing');
+    this.selectChannel();
+    this.selectIdentity();
     cy.wait(10000)
     cy.get(this.selectors.bouton).click();
 
@@ -231,8 +237,8 @@ class NotificationSlackPage extends BasePage {
     // FORM FILL (STABLE)
     // =========================
     this.selectTrigger('New lead reply');
-    this.selectChannel('#all-qaautomation-test');
-    this.selectIdentity('Robot Auto Testing');
+    this.selectChannel();
+    this.selectIdentity();
     cy.wait(10000)
     cy.get(this.selectors.testNotification).click();
 
@@ -293,6 +299,16 @@ class NotificationSlackPage extends BasePage {
       .should('be.visible')
       .click();
       cy.wait(12000);
+      cy.get(this.selectors.editChannel, { timeout: 20000 })
+      .eq(0) // choisir le troisième élément (0 = premier)
+      .should('be.visible')
+      .click();
+    
+      this.selectChannel();
+      cy.wait(12000);
+      cy.get(this.selectors.updateChannel, { timeout: 20000 })
+      .should('be.visible')
+      .click();
     this.waitForLoader();
     this.verifySlackPageIsVisible();
 
