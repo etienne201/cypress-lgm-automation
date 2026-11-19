@@ -41,7 +41,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       # Step 3: Install Linux system dependencies for Cypress & Puppeteer
       - name: 🐧 Install browser system dependencies
