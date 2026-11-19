@@ -5,10 +5,13 @@
   "main": "index.js",
   "scripts": {
     "cypress:open": "cypress open",
-    "cypress:run": "cypress run",
+    "cypress:run": "cypress run --browser chrome --headless",
     "cypress:run:chrome": "cypress run --browser chrome",
     "cypress:run:firefox": "cypress run --browser firefox",
     "cypress:run:edge": "cypress run --browser edge",
+    "test:ci": "cypress run --browser chrome --headless",
+    "cy:run:record": "cypress run --browser chrome --headless",
+    "report:pdf": "node scripts/generate-pdf.js",
     "test:api": "cypress run --spec 'cypress/e2e/api/**/*.cy.js'",
     "test:frontend": "cypress run --spec 'cypress/e2e/frontend/**/*.cy.js'",
     "test:smoke": "cypress run --env grepTags=@smoke",
@@ -41,10 +44,12 @@
     "@types/node": "^20.11.0",
     "allure-commandline": "^2.25.0",
     "cypress": "^13.6.3",
+    "cypress-mochawesome-reporter": "^3.8.2",
     "cypress-real-events": "^1.15.0",
     "dotenv": "^16.3.1",
     "eslint": "^8.56.0",
     "prettier": "^3.1.1",
+    "puppeteer": "^22.6.0",
     "typescript": "^5.3.3"
   },
   "engines": {

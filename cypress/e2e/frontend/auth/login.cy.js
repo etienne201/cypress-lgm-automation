@@ -26,7 +26,7 @@ describe('Login Feature (UI)', { tags: ['@auth', '@login', '@ui'] }, () => {
     it('TC01 – Login with valid standard user', () => {
       const user = Cypress.env('users')?.standard;
 
-      expect(user, 'Standard user must exist in cypress.env.json').to.exist;
+      expect(user, 'Standard user must exist in configuration').to.exist;
 
       loginPage
         .login(user.email, user.password)
@@ -35,15 +35,9 @@ describe('Login Feature (UI)', { tags: ['@auth', '@login', '@ui'] }, () => {
 
       dashboardPage.verifyDashboardLoaded();
     });
-
-    /**
-     * TC10
-     * Verify session persistence after page reload
-     */
-  
+  });
 
   after(() => {
     cy.customLog('✅ Login UI Test Suite completed', 'success');
   });
-})
 });

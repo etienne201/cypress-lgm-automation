@@ -9,9 +9,10 @@ export default defineConfig({
   e2e: {
     setupNodeEvents(on, config) {
       // ----------------------------
-      // Allure plugin
+      // Allure plugin & Mochawesome reporter
       // ----------------------------
       allureWriter(on, config);
+      require('cypress-mochawesome-reporter/plugin')(on);
 
       // ----------------------------
       // Tasks (Slack, logging)
@@ -52,6 +53,7 @@ export default defineConfig({
       // ----------------------------
       config.env.users = config.env.users || {
         standard: {
+          email: process.env.STANDARD_USER || 'standard@example.com',
           username: process.env.STANDARD_USER || 'standard@example.com',
           password: process.env.STANDARD_PASSWORD || 'Password123',
         },
@@ -119,11 +121,16 @@ export default defineConfig({
     testIsolation: true,
 
     // ----------------------------
-    // Reporter
+    // Reporter (HTML + JSON for PDF generation)
     // ----------------------------
-    reporter: 'cypress-multi-reporters',
+    reporter: 'cypress-mochawesome-reporter',
     reporterOptions: {
-      configFile: 'reporter-config.json',
+      reportDir: 'cypress/reports/html',
+      charts: true,
+      reportPageTitle: 'Cypress LGM Automation - Test Report',
+      embeddedScreenshots: true,
+      inlineAssets: true,
+      saveAllAttempts: false,
     },
 
     // ----------------------------

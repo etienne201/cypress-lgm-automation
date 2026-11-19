@@ -1,67 +1,111 @@
-name: CI/CD Pipeline
+name: CI/CD Cypress E2E Pipeline
 
 on:
   push:
     branches:
+      - master
       - main
       - develop
-      - import/**
   pull_request:
     branches:
+      - master
       - main
       - develop
+  workflow_dispatch:
   schedule:
-    - cron: '0 6 * * *' # 7:00 AM CAT (Central African Time)
+    - cron: '0 6 * * *'  # 7:00 AM CAT
     - cron: '0 12 * * *' # 1:00 PM CAT
     - cron: '0 17 * * *' # 6:00 PM CAT
 
 jobs:
   cypressTestE2E:
+    name: 🧪 Cypress Tests & Reports (HTML + PDF)
     runs-on: ubuntu-latest
 
     env:
       BASE_URL: https://test.lagrowthmachine.xyz
+      CYPRESS_BASE_URL: https://test.lagrowthmachine.xyz
       BASE_URL_API: https://apiv2-test.lagrowthmachine.xyz
-      CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }} # Ensure CYPRESS_RECORD_KEY is stored in GitHub Secrets
+      CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+      STANDARD_USER: ${{ secrets.STANDARD_USER }}
+      STANDARD_PASSWORD: ${{ secrets.STANDARD_PASSWORD }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
     steps:
       # Step 1: Checkout repository
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
 
-      # Step 2: Set up Node.js
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      # Step 2: Set up Node.js 20
+      - name: ⚙️ Set up Node.js 20
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
+          cache: 'npm'
 
-      # Step 3: Install dependencies
-      - name: Install dependencies
-        run: yarn install
-
-      # Step 4: Install Docker Compose
-      - name: Install Docker Compose
+      # Step 3: Install Linux system dependencies for Cypress & Puppeteer
+      - name: 🐧 Install browser system dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y docker-compose
+          sudo apt-get install -y \
+            libgtk2.0-0 \
+            libgtk-3-0 \
+            libgbm-dev \
+            libnotify-dev \
+            libgconf-2-4 \
+            libnss3 \
+            libxss1 \
+            libasound2 \
+            libxtst6 \
+            xauth \
+            xvfb
 
-      # Step 5: Build and run Cypress Docker container
-      - name: Build and run Cypress Docker container
+      # Step 4: Install Node dependencies
+      - name: 📦 Install dependencies
+        run: npm install
+
+      # Step 5: Run Cypress E2E Tests (Chrome Headless)
+      - name: 🚀 Run Cypress E2E Tests
+        id: cypress_run
+        run: npm run test:ci
+        continue-on-error: true
+
+      # Step 6: Generate PDF Test Report
+      - name: 📄 Generate PDF Test Report
+        if: always()
+        run: npm run report:pdf
+
+      # Step 7: Publish GitHub Step Summary
+      - name: 📊 Publish Execution Summary to Job
+        if: always()
         run: |
-          docker-compose up --build --abort-on-container-exit
-        env:
-          BASE_URL: ${{ env.BASE_URL }}
-          BASE_URL_API: ${{ env.BASE_URL_API }}
+          echo "## 📊 Résumé de l'Exécution Cypress" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Statut des tests :** ${{ steps.cypress_run.outcome == 'success' && '✅ Succès' || '❌ Échec' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branche :** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit :** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Rapports générés :** HTML interactif & Document PDF vectoriel" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📥 *Les rapports complets sont disponibles en téléchargement ci-dessous dans la section **Artifacts** (cypress-test-reports).* " >> $GITHUB_STEP_SUMMARY
 
-      # Step 6: Run Cypress tests with recording enabled
-      - name: Run Cypress tests with record
-        run: yarn run cy:run:record
-        env:
-          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
-
-      # Step 7: Upload Cypress test reports
-      - name: Upload Cypress test reports
-        uses: actions/upload-artifact@v3
+      # Step 8: Upload HTML & PDF reports + artifacts
+      - name: 📤 Upload Test Reports (HTML & PDF)
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: cypress-reports
-          path: ./cypress/reports
+          name: cypress-test-reports
+          path: |
+            cypress/reports/html
+            cypress/reports/cypress-test-report.pdf
+            cypress/screenshots
+            cypress/videos
+          retention-days: 30
+          if-no-files-found: warn
+
+      # Step 9: Final status gate
+      - name: 🎯 Gatekeeper Status Check
+        if: steps.cypress_run.outcome != 'success'
+        run: |
+          echo "❌ La suite de tests Cypress a rencontré des échecs."
+          echo "🔍 Consultez le rapport HTML et PDF téléchargé dans les artefacts."
+          exit 1

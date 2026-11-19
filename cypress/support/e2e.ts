@@ -2,6 +2,7 @@
 import './commands';
 import './api-commands';
 
+import 'cypress-mochawesome-reporter/register';
 import '@shelex/cypress-allure-plugin';
 import '@cypress/grep';
 import 'cypress-real-events/support';
