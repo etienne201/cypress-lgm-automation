@@ -78,12 +78,42 @@ async function generatePdf() {
       return;
     }
 
-    console.log(`⏳ Impression PDF à partir de : ${targetHtml}`);
-    const browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-    });
+    // Detect system Chrome if available on GitHub Actions runner
+    const possibleChromePaths = [
+      process.env.PUPPETEER_EXECUTABLE_PATH,
+      '/usr/bin/google-chrome',
+      '/usr/bin/google-chrome-stable',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/chromium'
+    ].filter(Boolean);
 
+    let executablePath;
+    for (const p of possibleChromePaths) {
+      if (fs.existsSync(p)) {
+        executablePath = p;
+        break;
+      }
+    }
+
+    console.log(`⏳ Impression PDF à partir de : ${targetHtml}`);
+    const launchOptions = {
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-zygote'
+      ]
+    };
+
+    if (executablePath) {
+      console.log(`🧭 Utilisation du navigateur Chrome système : ${executablePath}`);
+      launchOptions.executablePath = executablePath;
+    }
+
+    const browser = await puppeteer.launch(launchOptions);
     const page = await browser.newPage();
     await page.goto(`file://${targetHtml}`, { waitUntil: 'networkidle0', timeout: 30000 });
 
