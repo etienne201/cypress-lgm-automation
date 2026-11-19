@@ -61,24 +61,41 @@ jobs:
         if: always()
         run: npm run report:pdf
 
-      # Step 7: Publish GitHub Step Summary
-      - name: 📊 Publish Execution Summary to Job
+      # Step 7: Resolve committer email & metadata
+      - name: 👤 Resolve Committer Info
+        if: always()
+        id: committer
+        run: |
+          AUTHOR_NAME="${{ github.event.head_commit.author.name || github.actor }}"
+          AUTHOR_EMAIL="${{ github.event.head_commit.author.email || github.event.pusher.email || secrets.NOTIFICATION_EMAIL }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          ARTIFACTS_URL="${RUN_URL}#artifacts"
+          
+          echo "author_name=${AUTHOR_NAME}" >> $GITHUB_OUTPUT
+          echo "author_email=${AUTHOR_EMAIL}" >> $GITHUB_OUTPUT
+          echo "run_url=${RUN_URL}" >> $GITHUB_OUTPUT
+          echo "artifacts_url=${ARTIFACTS_URL}" >> $GITHUB_OUTPUT
+
+      # Step 8: Publish GitHub Step Summary with direct links
+      - name: 📊 Publish Execution Summary with Direct Links
         if: always()
         run: |
-          echo "## 📊 Résumé de l'Exécution Cypress" >> $GITHUB_STEP_SUMMARY
+          STATUS_ICON="${{ steps.cypress_run.outcome == 'success' && '✅ Succès' || '⚠️ Échec des tests' }}"
+          echo "## 📊 Rapport d'Exécution Cypress E2E" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.cypress_run.outcome }}" = "success" ]; then
-            echo "- **Statut des tests :** ✅ Succès (100% Passed)" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- **Statut des tests :** ⚠️ Tests terminés avec échecs (Voir rapport)" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "- **Branche :** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commit :** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Rapports générés :** HTML interactif & Document PDF vectoriel" >> $GITHUB_STEP_SUMMARY
+          echo "| Métrique | Détail |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Statut Global** | ${STATUS_ICON} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Auteur du Push** | \`${{ steps.committer.outputs.author_name }}\` (${{ steps.committer.outputs.author_email }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branche** | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit** | [\`${{ github.sha }}\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Message** | ${{ github.event.head_commit.message || 'Exécution manuelle / cron' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Lien Direct du Run** | 🔗 [Voir l'Exécution #${{ github.run_number }}](${{ steps.committer.outputs.run_url }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Téléchargement Rapports** | 📥 [Télécharger PDF & HTML dans Artifacts](${{ steps.committer.outputs.artifacts_url }}) |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📥 *Les rapports complets sont disponibles en téléchargement ci-dessous dans la section **Artifacts** (cypress-test-reports).* " >> $GITHUB_STEP_SUMMARY
+          echo "> 💡 **Rapport PDF joint :** Le document PDF vectoriel généré est téléchargeable directement ci-dessous dans la section **Artifacts**." >> $GITHUB_STEP_SUMMARY
 
-      # Step 8: Upload HTML & PDF reports + artifacts
+      # Step 9: Upload HTML & PDF reports + artifacts
       - name: 📤 Upload Test Reports (HTML & PDF)
         if: always()
         uses: actions/upload-artifact@v4
@@ -91,3 +108,30 @@ jobs:
             cypress/videos
           retention-days: 30
           if-no-files-found: warn
+
+      # Step 10: Send Email Report to Committer
+      - name: 📧 Send Test Report via Email
+        if: always()
+        continue-on-error: true
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.SMTP_USERNAME || 'poutchokoetienne@gmail.com' }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "[CI/CD Cypress] ${{ steps.cypress_run.outcome == 'success' && '✅ SUCCÈS' || '❌ ÉCHEC' }} sur ${{ github.ref_name }} (Run #${{ github.run_number }})"
+          to: ${{ steps.committer.outputs.author_email != '' && steps.committer.outputs.author_email || 'poutchokoetienne@gmail.com' }},poutchokoetienne@gmail.com
+          from: "Cypress CI/CD <poutchokoetienne@gmail.com>"
+          html_body: |
+            <h2>📊 Rapport de tests Cypress E2E</h2>
+            <p>Bonjour <strong>${{ steps.committer.outputs.author_name }}</strong>,</p>
+            <p>Voici le résultat de l'exécution suite au push sur la branche <code>${{ github.ref_name }}</code> :</p>
+            <ul>
+              <li><strong>Statut :</strong> ${{ steps.cypress_run.outcome == 'success' && '✅ SUCCÈS (100% Passed)' || '❌ ÉCHEC' }}</li>
+              <li><strong>Commit :</strong> <a href="${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}">${{ github.sha }}</a></li>
+              <li><strong>Message :</strong> ${{ github.event.head_commit.message }}</li>
+              <li><strong>Lien du Run GitHub Actions :</strong> <a href="${{ steps.committer.outputs.run_url }}">${{ steps.committer.outputs.run_url }}</a></li>
+              <li><strong>Téléchargement des artefacts :</strong> <a href="${{ steps.committer.outputs.artifacts_url }}">${{ steps.committer.outputs.artifacts_url }}</a></li>
+            </ul>
+            <p>📎 <em>Le rapport de test complet au format PDF est attaché à ce courriel.</em></p>
+          attachments: cypress/reports/cypress-test-report.pdf
